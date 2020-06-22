@@ -1,0 +1,171 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: smartcerv-mysql-service
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: smartcerv-mysql-app
+  clusterIP: None
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: smartcerv-mysql-pv-claim
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: 
+  name: data-init-pv-claim
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smartcerv-mysql-cnf
+data:
+  my.cnf: |
+    [mysqld]
+    collation-server = utf8_unicode_ci
+    init-connect='SET NAMES utf8'
+    character-set-server = utf8
+---
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: StatefulSet
+metadata:
+  name: smartcerv-mysql-app
+spec:
+  serviceName: "smartcerv-mysql-service"
+  selector:
+    matchLabels:
+      app: smartcerv-mysql-app
+  template:
+    metadata:
+      labels:
+        app: smartcerv-mysql-app
+    spec:
+      containers:
+      - image: mysql:5.7.3
+        name: smartcerv-mysql-container
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smartcerv-mysql-passwords
+              key: mysql-root-password
+        - name: MYSQL_DATABASE
+          value: smartcerv
+        - name: MYSQL_USER
+          value: smartcerv
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smartcerv-mysql-passwords
+              key: mysql-smartcerv-user-password
+        ports:
+        - containerPort: 3306
+          name: mysql-port
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+        - name: smartcerv-mysql-cnf-volume
+          mountPath: /etc/mysql
+          readOnly: true
+        - name: data-init-pv-claim
+          mountPath: /docker-entrypoint-initdb.d
+          readOnly: true
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: smartcerv-mysql-pv-claim
+      - name: smartcerv-mysql-cnf-volume
+        configMap:
+          name: smartcerv-mysql-cnf
+      - name: data-init-pv-claim
+        persistentVolumeClaim:
+          claimName: data-init-pv-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smartcerv-openmrs-service
+spec:
+  ports:
+  - port: 8080
+  selector:
+    app: smartcerv-openmrs-app
+  type:
+    LoadBalancer
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: smartcerv-openmrs-pv-claim
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smartcerv-openmrs-app
+spec:
+  selector:
+    matchLabels:
+      app: smartcerv-openmrs-app
+  template:
+    metadata:
+      labels:
+        app: smartcerv-openmrs-app
+    spec:
+      containers:
+      - image: openmrs/openmrs-reference-application-distro
+        name: smartcerv-openmrs-container
+        imagePullPolicy: Always
+        env:
+        - name: DB_HOST
+          value: smartcerv-mysql-service
+        - name: DB_DATABASE
+          value: smartcerv
+        - name: DB_USERNAME
+          value: smartcerv
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smartcerv-mysql-passwords
+              key: mysql-root-password
+        - name: DB_CREATE_TABLES
+          value: 'false'
+        - name: DB_AUTO_UPDATE
+          value: 'false'
+        - name: MODULE_WEB_ADMIN
+          value: 'true'
+        ports:
+        - containerPort: 8080
+          name: smartcerv
+        volumeMounts:
+        - name: openmrs-persistent-storage
+          mountPath: /usr/local/tomcat/.OpenMRS
+      volumes:
+      - name: openmrs-persistent-storage
+        persistentVolumeClaim:
+          claimName: smartcerv-openmrs-pv-claim
+

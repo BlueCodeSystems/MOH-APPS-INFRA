@@ -1,0 +1,153 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-5-7-service
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: mysql-5-7-app
+  clusterIP: None
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-5-7-pv-claim
+spec:
+  selector:
+    matchLabels:
+      app: mysql-5-7-app
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-5-7-cnf
+data:
+  my.cnf: |
+    [mysqld]
+    collation-server = utf8_unicode_ci
+    init-connect='SET NAMES utf8'
+    character-set-server = utf8
+---
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: StatefulSet
+metadata:
+  name: mysql-5-7-app
+spec:
+  serviceName: "mysql-5-7-service"
+  selector:
+    matchLabels:
+      app: mysql-5-7-app
+  template:
+    metadata:
+      labels:
+        app: mysql-5-7-app
+    spec:
+      containers:
+      - image: mysql:5.7.30
+        name: mysql-5-7-container
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-5-7-passwords
+              key: mysql-root-password
+        ports:
+        - containerPort: 3306
+          name: mysql-port
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+        - name: mysql-5-7-cnf-volume
+          mountPath: /etc/mysql
+          readOnly: true
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: mysql-5-7-pv-claim
+      - name: mysql-5-7-cnf-volume
+        configMap:
+          name: mysql-5-7-cnf
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-5-6-service
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: mysql-5-6-app
+  clusterIP: None
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-5-6-pv-claim
+spec:
+  selector:
+    matchLabels:
+      app: mysql-5-6-app
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-5-6-cnf
+data:
+  my.cnf: |
+    [mysqld]
+    collation-server = utf8_unicode_ci
+    init-connect='SET NAMES utf8'
+    character-set-server = utf8
+---
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: StatefulSet
+metadata:
+  name: mysql-5-6-app
+spec:
+  serviceName: "mysql-5-6-service"
+  selector:
+    matchLabels:
+      app: mysql-5-6-app
+  template:
+    metadata:
+      labels:
+        app: mysql-5-6-app
+    spec:
+      containers:
+      - image: mysql:5.6.48
+        name: mysql-5-6-container
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-5-6-passwords
+              key: mysql-root-password
+        ports:
+        - containerPort: 3306
+          name: mysql-port
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+        - name: mysql-5-6-cnf-volume
+          mountPath: /etc/mysql
+          readOnly: true
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: mysql-5-6-pv-claim
+      - name: mysql-5-6-cnf-volume
+        configMap:
+          name: mysql-5-6-cnf
