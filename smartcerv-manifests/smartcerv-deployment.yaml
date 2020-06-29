@@ -1,42 +1,33 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: smartcerv-mysql-service
+  name: mysql-5-7-service
 spec:
   ports:
   - port: 3306
   selector:
-    app: smartcerv-mysql-app
+    app: mysql-5-7-app
   clusterIP: None
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: smartcerv-mysql-pv-claim
+  name: mysql-5-7-pv-claim
 spec:
+  selector:
+    matchLabels:
+      app: mysql-5-7-app
   storageClassName: manual
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 10Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata: 
-  name: data-init-pv-claim
-spec:
-  storageClassName: manual
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 2Gi
+      storage: 50Gi
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: smartcerv-mysql-cnf
+  name: mysql-5-7-cnf
 data:
   my.cnf: |
     [mysqld]
@@ -44,60 +35,45 @@ data:
     init-connect='SET NAMES utf8'
     character-set-server = utf8
 ---
-apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: smartcerv-mysql-app
+  name: mysql-5-7-app
 spec:
-  serviceName: "smartcerv-mysql-service"
+  serviceName: "mysql-5-7-service"
   selector:
     matchLabels:
-      app: smartcerv-mysql-app
+      app: mysql-5-7-app
   template:
     metadata:
       labels:
-        app: smartcerv-mysql-app
+        app: mysql-5-7-app
     spec:
       containers:
-      - image: mysql:5.7.3
-        name: smartcerv-mysql-container
+      - image: mysql:5.7.30
+        name: mysql-5-7-container
         env:
         - name: MYSQL_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: smartcerv-mysql-passwords
+              name: mysql-5-7-passwords
               key: mysql-root-password
-        - name: MYSQL_DATABASE
-          value: smartcerv
-        - name: MYSQL_USER
-          value: smartcerv
-        - name: MYSQL_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: smartcerv-mysql-passwords
-              key: mysql-smartcerv-user-password
         ports:
         - containerPort: 3306
           name: mysql-port
         volumeMounts:
         - name: mysql-persistent-storage
           mountPath: /var/lib/mysql
-        - name: smartcerv-mysql-cnf-volume
+        - name: mysql-5-7-cnf-volume
           mountPath: /etc/mysql
-          readOnly: true
-        - name: data-init-pv-claim
-          mountPath: /docker-entrypoint-initdb.d
           readOnly: true
       volumes:
       - name: mysql-persistent-storage
         persistentVolumeClaim:
-          claimName: smartcerv-mysql-pv-claim
-      - name: smartcerv-mysql-cnf-volume
+          claimName: mysql-5-7-pv-claim
+      - name: mysql-5-7-cnf-volume
         configMap:
-          name: smartcerv-mysql-cnf
-      - name: data-init-pv-claim
-        persistentVolumeClaim:
-          claimName: data-init-pv-claim
+          name: mysql-5-7-cnf
 ---
 apiVersion: v1
 kind: Service
@@ -168,4 +144,3 @@ spec:
       - name: openmrs-persistent-storage
         persistentVolumeClaim:
           claimName: smartcerv-openmrs-pv-claim
-

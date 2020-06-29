@@ -1,0 +1,12 @@
+resources:
+  - storage.yaml
+  - zeir-deployment.yaml
+  - secrets.yaml
+vars:
+  - name: mysql-service
+    objref:
+      kind: Service
+      name: mysql-service
+      apiVersion: v1
+    fieldref:
+      fieldpath: metadata.name

@@ -1,0 +1,83 @@
+#All the PVS are given 1GB, but this is kustomized using the overlays so that prod has more space vs dev
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-5-6-pv-claim
+spec:
+  selector:
+    matchLabels:
+      app: zeir-app
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: couchdb-1-6-1-pv-claim
+  labels:
+    app: zeir-app
+spec:
+  selector:
+    matchLabels:
+      app: couchdb-1-6-1
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: couchdb-lucene-pv-claim
+  labels:
+    app: zeir-app
+spec:
+  selector:
+    matchLabels:
+      app: couchdb-lucene-app
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: zeir-openmrs-pv-claim
+  labels:
+    app: zeir-app
+spec:
+  selector:
+    matchLabels:
+      app: zeir-openmrs-app
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pv-claim
+  labels:
+    app: zeir-app
+spec:
+  selector:
+    matchLabels:
+      app: zeir-redis-app
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi

@@ -1,0 +1,286 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+  labels:
+    app: zeir-app
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: zeir-app
+  clusterIP: None
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-5-6-cnf
+  labels:
+    app: zeir-app
+data:
+  my.cnf: |
+    [mysqld]
+    collation-server = utf8_unicode_ci
+    init-connect='SET NAMES utf8'
+    character-set-server = utf8
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zeir-config
+  labels:
+    app: zeir-app
+data:
+  zeir-mysql-username: zeir
+  zeir-couchdb-username: zeir
+  zeir-openmrs-database: zeir
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql-5-6-app
+  labels:
+    app: zeir-app
+spec:
+  serviceName: mysql-service
+  selector:
+    matchLabels:
+      app: zeir-app
+  template:
+    metadata:
+      labels:
+        app: zeir-app
+    spec:
+      containers:
+      - image: mysql:5.6.48
+        name: mysql-5-6-container
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zeir-secrets
+              key: mysql-root-password
+        - name: MYSQL_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: zeir-mysql-username
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zeir-secrets
+              key: zeir-user-password
+        ports:
+        - containerPort: 3306
+          name: mysql-port
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+        - name: mysql-5-6-cnf-volume
+          mountPath: /etc/mysql
+          readOnly: true
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: mysql-5-6-pv-claim
+      - name: mysql-5-6-cnf-volume
+        configMap:
+          name: mysql-5-6-cnf
+      - name: zeir-config
+        configMap:
+          name: zeir-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: couchdb-1-6-1-svc
+  labels:
+    app: zeir-app
+spec:
+  ports:
+  - port: 5984
+  selector:
+    app: couchdb-1-6-1-app
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: couchdb-1-6-1-app
+  labels:
+    app: zeir-app
+spec:
+  serviceName: "couchdb-1-6-1-svc"
+  selector:
+    matchLabels:
+      app: couchdb-1-6-1-app
+  template:
+    metadata:
+      labels:
+        app: couchdb-1-6-1-app
+    spec:
+      containers:
+      - image: couchdb:1.6.1
+        name: couchdb-1-6-1-container
+        env:
+        - name: COUCHDB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: zeir-couchdb-username
+        - name: COUCHDB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zeir-secrets
+              key: couchdb-password
+        ports:
+        - containerPort: 5954
+          name: couch-port
+        volumeMounts:
+        - name: couchdb-1-6-1-storage
+          mountPath: /var/local/var/lib/couchdb
+      volumes:
+      - name: couchdb-1-6-1-storage
+        persistentVolumeClaim:
+          claimName: couchdb-1-6-1-pv-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: couchdb-lucene-svc
+  labels:
+    app: zeir-app
+spec:
+  ports:
+  - port: 5985
+  selector:
+    app: couchdb-lucene-app
+  type:
+    LoadBalancer
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: couchdb-lucene-app
+  labels:
+    app: zeir-app
+spec:
+  serviceName: "couchdb-lucene-svc"
+  selector:
+    matchLabels:
+      app: couchdb-lucene-app
+  template:
+    metadata:
+      labels:
+        app: zeir-app
+    spec:
+      containers:
+      - image: klaemo/couchdb-lucene
+        name: couchdb-lucene-container
+        volumeMounts:
+        - name: couchdb-lucene-db
+          mountPath: /opt/couchdb-lucene/indexes
+        ports:
+        - containerPort: 5985
+      volumes:
+      - name: couchdb-lucene-db
+        persistentVolumeClaim:
+          claimName: couchdb-lucene-pv-claim
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zeir-openmrs-app
+  labels:
+    app: zeir-app
+spec:
+  selector:
+    matchLabels:
+      app: zeir-openmrs-app
+  template:
+    metadata:
+      labels:
+        app: zeir-openmrs-app
+    spec:
+      containers:
+      - image: openmrs/openmrs-distro-platform:1.11.9-SNAPSHOT
+        name: zeir-openmrs-container
+        imagePullPolicy: Always
+        env:
+        - name: DB_HOST
+          value: $(mysql-service)
+        - name: DB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: zeir-openmrs-database
+        - name: DB_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: zeir-mysql-username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zeir-secrets
+              key: zeir-user-password
+        - name: DB_CREATE_TABLES
+          value: 'false'
+        - name: DB_AUTO_UPDATE
+          value: 'false'
+        - name: MODULE_WEB_ADMIN
+          value: 'true'
+        ports:
+        - containerPort: 8080
+          name: zeir-port
+        volumeMounts:
+        - name: zeir-persistent-storage
+          mountPath: /usr/local/tomcat/.OpenMRS
+      volumes:
+      - name: zeir-persistent-storage
+        persistentVolumeClaim:
+          claimName: zeir-openmrs-pv-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-svc
+  labels:
+    app: zeir-app
+spec:
+  ports:
+  - port: 6379
+  selector:
+    app: redis-app
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  labels:
+    app: zeir-app
+spec:
+  serviceName: "redis-svc"
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: zeir-app
+    spec:
+      containers:
+      - image: redis:6.0.5
+        name: redis-container
+        ports:
+        - containerPort: 6379
+          name: redis-port
+        volumeMounts:
+        - name: redis-storage
+          mountPath: /usr/local/etc/redis/redis
+      volumes:
+      - name: redis-storage
+        persistentVolumeClaim:
+          claimName: redis-pv-claim
