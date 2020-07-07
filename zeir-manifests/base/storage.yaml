@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: mysql-5-6-pv-claim
+  name: mysql-pv-claim
 spec:
   selector:
     matchLabels:
@@ -17,13 +17,13 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: couchdb-1-6-1-pv-claim
+  name: couchdb-pv-claim
   labels:
     app: zeir-app
 spec:
   selector:
     matchLabels:
-      app: couchdb-1-6-1
+      app: couchdb
   storageClassName: manual
   accessModes:
     - ReadWriteOnce
@@ -51,13 +51,13 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: zeir-openmrs-pv-claim
+  name: openmrs-pv-claim
   labels:
     app: zeir-app
 spec:
   selector:
     matchLabels:
-      app: zeir-openmrs-app
+      app: openmrs-app
   storageClassName: manual
   accessModes:
     - ReadWriteOnce
@@ -81,3 +81,20 @@ spec:
   resources:
     requests:
       storage: 2Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pv-claim
+  labels:
+    app: zeir-app
+spec:
+  selector:
+    matchLabels:
+      app: zeir-postgres-app
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi

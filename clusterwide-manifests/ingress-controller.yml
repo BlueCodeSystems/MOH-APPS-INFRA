@@ -1,13 +1,20 @@
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
-    name: ingress-test
+    name: zeir-ingress
 spec:
   rules:
-  - host: ingress-test.bluecodeltd.com
+  - host: zeir-openmrs.bluecodeltd.com
     http:
       paths:
       - path:
         backend:
-          serviceName: nginx-service
+          serviceName: $(openmrs-service)
+          servicePort: 80
+  - host: zeir-opensrp.bluecodeltd.com
+    http:
+      paths:
+      - path:
+        backend:
+          serviceName: $(opensrp-service)
           servicePort: 80

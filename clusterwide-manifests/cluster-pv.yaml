@@ -43,7 +43,7 @@ metadata:
 spec:
   storageClassName: manual
   capacity:
-    storage: 10Gi
+    storage: 50Gi
   accessModes:
     - ReadWriteOnce
   hostPath:
@@ -60,7 +60,41 @@ metadata:
 spec:
   storageClassName: manual
   capacity:
-    storage: 20Gi
+    storage: 50Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data"
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-5
+  labels:
+    type: local
+    app: zeir-redis-app
+    environment: development
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data"
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-6
+  labels:
+    type: local
+    app: zeir-postgres-app
+    environment: development
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 10Gi
   accessModes:
     - ReadWriteOnce
   hostPath:

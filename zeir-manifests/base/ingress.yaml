@@ -1,0 +1,13 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+    name: zeir-ingress
+spec:
+  rules:
+  - host: zeir-openmrs.bluecodeltd.com
+    http:
+      paths:
+      - path:
+        backend:
+          serviceName: openmrs-service
+          servicePort: 8080
