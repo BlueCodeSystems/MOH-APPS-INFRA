@@ -99,3 +99,20 @@ spec:
     - ReadWriteOnce
   hostPath:
     path: "/mnt/data"
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-7
+  labels:
+    type: local
+    app: opensrp-app
+    environment: development
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data"

@@ -18,3 +18,24 @@ vars:
       apiVersion: v1
     fieldref:
       fieldpath: metadata.name
+  - name: openmrs-service
+    objref:
+      kind: Service
+      name: openmrs-service
+      apiVersion: v1
+    fieldref:
+      fieldpath: metadata.name
+  - name: redis-service
+    objref:
+      kind: Service
+      name: redis-service
+      apiVersion: v1
+    fieldref:
+      fieldpath: metadata.name
+  - name: activemq-service
+    objref:
+      kind: Service
+      name: activemq-service
+      apiVersion: v1
+    fieldref:
+      fieldpath: metadata.name

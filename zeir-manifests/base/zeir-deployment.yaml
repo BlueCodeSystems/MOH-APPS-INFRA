@@ -1,7 +1,7 @@
----
+--- 
 apiVersion: v1
-kind: Service
-metadata:
+kind: Service 
+metadata: 
   name: mysql-service
   labels:
     app: zeir-app
@@ -42,7 +42,14 @@ data:
   zeir-database: openmrs
   couchdb-username: zeir
   openmrs-database: openmrs
+  openmrs-ui-username: openmrs
+  opensrp-mysql-username: openmrs
+  opensrp-mysql-database: opensrp
+  opensrp-mysql-motech-database: motech
+  opensrp-mysql-anm-database: anm
+  opensrp-postgres-database: opensrp
   postgres-username: zeir
+  dhis2-username: zeir
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -223,8 +230,7 @@ spec:
   - port: 5985
   selector:
     app: couchdb-lucene-app
-  type:
-    LoadBalancer
+  clusterIP: None
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -266,7 +272,8 @@ spec:
   - port: 8080
   selector:
     app: openmrs-app
-  clusterIP: None
+  type:
+    LoadBalancer
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -313,14 +320,134 @@ spec:
           value: 'true'
         ports:
         - containerPort: 8080
-          name: zeir-port
+          name: openmrs-port
         volumeMounts:
-        - name: zeir-persistent-storage
+        - name: openmrs-persistent-storage
           mountPath: /usr/local/tomcat/.OpenMRS
       volumes:
-      - name: zeir-persistent-storage
+      - name: openmrs-persistent-storage
         persistentVolumeClaim:
           claimName: openmrs-pv-claim
+---
+#This job builds the opensrp application using maven and places it in a volume that tomcat can access.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: opensrp-app-build
+  labels:
+    app: zeir-app
+spec:
+  template:
+    metadata:
+      labels:
+        app: opensrp-app-build
+    spec:
+      restartPolicy: Never
+      containers:
+      - image: maven:3.6.3-jdk-11
+        name: opensrp-build-container
+        imagePullPolicy: Always
+        env:
+        - name: OPENMRS_URL
+          value: $(openmrs-service):openmrs-port/openmrs
+        - name: OPENMRS_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: openmrs-ui-username
+        - name: OPENMRS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zeir-secrets
+              key: openmrs-ui-password
+        - name: COUCHDB_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: couchdb-username
+        - name: COUCHDB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zeir-secrets
+              key: couchdb-password
+        - name: OPENSRP_MYSQL_USER
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: opensrp-mysql-username
+        - name: OPENSRP_MYSQL_USER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zeir-secrets
+              key: mysql-user-password
+        - name: OPENSRP_MYSQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: opensrp-mysql-database
+        - name: OPENSRP_MYSQL_MOTECH_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: opensrp-mysql-motech-database
+        - name: OPENSRP_MYSQL_REPORTING_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: opensrp-mysql-motech-database
+        - name: OPENSRP_MYSQL_ANM_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: opensrp-mysql-anm-database
+        - name: REDIS_HOST
+          value: $(redis-service)
+        - name: REDIS_PORT
+          value: redis-port
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zeir-secrets
+              key: redis-password
+        - name: OPENSRP_MYSQL_JDBC
+          value: jdbc:mysql:$(mysql-service):mysql-port/opensrp?createDatabaseIfNotExist=true
+        - name: OPENSRP_MYSQL_JDBC_WO
+          value: jdbc:mysql:$(mysql-service):mysql-port
+        - name: OPENSRP_MYSQL_MOTECH_JDBC
+          value: jdbc:mysql:$(mysql-service):mysql-port/motech
+        - name: OPENSRP_POSTGRES_JDBC
+          value: jdbc:postgresql:$(postgres-service):postgres-port/opensrp
+        - name: DHIS2_URL
+          value: $(dhis2-service):dhis2-port/api
+        - name: DHIS2_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: zeir-config
+              key: dhis2-username
+        - name: DHIS2_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zeir-secrets
+              key: dhis2-password
+        - name: OPENSRP_POSTGRES_USER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zeir-secrets
+              key: opensrp-postgres-password
+        - name: OPENSRP_POSTGRES_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: opensrp-postgres-database
+        - name: ACTIVEMQ_URL
+          value: tcp://$(activemq-service):activemq-port
+        volumeMounts:
+        - name: opensrp-persistent-storage
+          mountPath: /usr/local/tomcat/.OpenMRS
+      volumes:
+      - name: opensrp-persistent-storage
+        persistentVolumeClaim:
+          claimName: opensrp-pv-claim
 ---
 apiVersion: v1
 kind: Service
