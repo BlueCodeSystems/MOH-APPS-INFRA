@@ -46,10 +46,32 @@ data:
   opensrp-mysql-username: openmrs
   opensrp-mysql-database: opensrp
   opensrp-mysql-motech-database: motech
+  opensrp-mysql-reporting-database: reporting
   opensrp-mysql-anm-database: anm
   opensrp-postgres-database: opensrp
   postgres-username: zeir
   dhis2-username: zeir
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init-script
+  labels:
+    app: zeir-app
+data:
+  mysql-init.sh: |
+    mysql -u root -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS  $MYSQL_OPENMRS_DATABASE /*\!40100 DEFAULT CHARACTER SET utf8 */;"
+    mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE $OPENSRP_MYSQL_DATABASE /*\!40100 DEFAULT CHARACTER SET utf8 */;"
+    mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE $OPENSRP_MYSQL_MOTECH_DATABASE /*\!40100 DEFAULT CHARACTER SET utf8 */;"
+    mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE $OPENSRP_MYSQL_REPORTING_DATABASE /*\!40100 DEFAULT CHARACTER SET utf8 */;"
+    mysql -u root -p"$MYSQL_ROOT_PASSWORD" -h "$MYSQL_HOST" -e "CREATE DATABASE $OPENSRP_MYSQL_ANM_DATABASE /*\!40100 DEFAULT CHARACTER SET utf8 */;"
+
+    mysql -u root -p"$MYSQL_ROOT_PASSWORD" -h "$MYSQL_HOST" -e "GRANT ALL ON \`$MYSQL_OPENMRS_DATABASE\`.* TO '$MYSQL_OPENMRS_USER'@'%' IDENTIFIED BY '$OPENSRP_MYSQL_USER_PASSWORD';"
+    mysql -u root -p"$MYSQL_ROOT_PASSWORD" -h "$MYSQL_HOST" -e "GRANT ALL ON \`$OPENSRP_MYSQL_DATABASE\`.* TO '$OPENSRP_MYSQL_USER'@'%' IDENTIFIED BY '$OPENSRP_POSTGRES_USER_PASSWORD';"
+    mysql -u root -p"$MYSQL_ROOT_PASSWORD" -h "$MYSQL_HOST" -e "GRANT ALL ON \`$OPENSRP_MYSQL_MOTECH_DATABASE\`.* TO '$OPENSRP_MYSQL_USER'@'%' ;"
+    mysql -u root -p"$MYSQL_ROOT_PASSWORD" -h "$MYSQL_HOST" -e "GRANT ALL ON \`$OPENSRP_MYSQL_REPORTING_DATABASE\`.* TO '$OPENSRP_MYSQL_USER'@'%' ;"
+    mysql -u root -p"$MYSQL_ROOT_PASSWORD" -h "$MYSQL_HOST" -e "GRANT ALL ON \`$OPENSRP_MYSQL_ANM_DATABASE\`.* TO '$OPENSRP_MYSQL_USER'@'%' ;"
+    mysql -u root -p"$MYSQL_ROOT_PASSWORD" -h "$MYSQL_HOST" -e "FLUSH PRIVILEGES;"
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -76,21 +98,41 @@ spec:
             secretKeyRef:
               name: zeir-secrets
               key: mysql-root-password
-        - name: MYSQL_USERNAME
-          valueFrom:
-            configMapKeyRef:
-              name: zeir-config
-              key: mysql-username
-        - name: MYSQL_DATABASE
-          valueFrom:
-            configMapKeyRef:
-              name: zeir-config
-              key: zeir-database
-        - name: MYSQL_PASSWORD
+        - name: OPENSRP_MYSQL_USER_PASSWORD
           valueFrom:
             secretKeyRef:
               name: zeir-secrets
               key: mysql-user-password
+        - name: OPENSRP_POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: postgres-username
+        - name: OPENSRP_MYSQL_USER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zeir-secrets
+              key: mysql-user-password
+        - name: OPENSRP_MYSQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: opensrp-mysql-database
+        - name: OPENSRP_MYSQL_MOTECH_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: opensrp-mysql-motech-database
+        - name: OPENSRP_MYSQL_REPORTING_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: opensrp-mysql-reporting-database
+        - name: OPENSRP_MYSQL_ANM_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: opensrp-mysql-anm-database
         ports:
         - containerPort: 3306
           name: mysql-port
@@ -100,6 +142,9 @@ spec:
         - name: mysql-cnf-volume
           mountPath: /etc/mysql
           readOnly: true
+        - name: mysql-init-volume
+          mountPath: /docker-entrypoint-initdb.d
+          readOnly: true
       volumes:
       - name: mysql-persistent-storage
         persistentVolumeClaim:
@@ -107,6 +152,9 @@ spec:
       - name: mysql-cnf-volume
         configMap:
           name: mysql-cnf
+      - name: mysql-init-volume
+        configMap:
+          name: mysql-init-script
       - name: zeir-config
         configMap:
           name: zeir-config
@@ -154,6 +202,11 @@ spec:
             configMapKeyRef:
               name: zeir-config
               key: postgres-username
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: opensrp-postgres-database
         ports:
         - containerPort: 5432
           name: postgres-port
@@ -329,24 +382,58 @@ spec:
         persistentVolumeClaim:
           claimName: openmrs-pv-claim
 ---
-#This job builds the opensrp application using maven and places it in a volume that tomcat can access.
-apiVersion: batch/v1
-kind: Job
+apiVersion: v1
+kind: ConfigMap
 metadata:
-  name: opensrp-app-build
+  name: opensrp-build-script
+  labels:
+    app: zeir-app
+data:
+  opensrp-build.sh: |
+    apt-get update
+    apt-get install -y gettext
+    apt-get install -y moreutils
+    cd /etc/build-dir
+    if [ ! -d "opensrp-server" ] ; then
+       git clone https://github.com/BlueCodeSystems/opensrp-server
+       cd opensrp-server
+    else    
+       cd "opensrp-server"
+       git reset --hard HEAD
+       git pull https://github.com/BlueCodeSystems/opensrp-server
+    fi
+    envsubst < assets/config/opensrp.properties | sponge assets/config/opensrp.properties
+    envsubst < assets/config/activemq.properties | sponge assets/config/activemq.properties
+    envsubst < assets/config/couchdb.properties | sponge assets/config/couchdb.properties
+    envsubst < opensrp-web/src/main/resources/quartz.properties | sponge opensrp-web/src/main/resources/quartz.properties
+    envsubst < opensrp-web/src/main/webapp/META-INF/context.xml | sponge opensrp-web/src/main/webapp/META-INF/context.xml
+
+    mvn clean package -Dmaven.test.skip=true -P couchdb,jedis -f pom.xml
+---
+#This job builds the opensrp application using maven and places it in a volume that tomcat can access.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opensrp-app
   labels:
     app: zeir-app
 spec:
+  selector:
+    matchLabels:
+      app: opensrp-app
   template:
     metadata:
       labels:
-        app: opensrp-app-build
+        app: opensrp-app
     spec:
-      restartPolicy: Never
       containers:
-      - image: maven:3.6.3-jdk-11
+      - image: tomcat:7.0.105-jdk8-openjdk
+        name: opensrp-run-container
+      initContainers:
+      - image: maven:3.6.3-jdk-8
         name: opensrp-build-container
         imagePullPolicy: Always
+        command: ["bash", "/etc/scripts/opensrp-build.sh"]
         env:
         - name: OPENMRS_URL
           value: $(openmrs-service):openmrs-port/openmrs
@@ -394,7 +481,7 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: zeir-config
-              key: opensrp-mysql-motech-database
+              key: opensrp-mysql-reporting-database
         - name: OPENSRP_MYSQL_ANM_DATABASE
           valueFrom:
             configMapKeyRef:
@@ -421,9 +508,14 @@ spec:
           value: $(dhis2-service):dhis2-port/api
         - name: DHIS2_USERNAME
           valueFrom:
-            secretKeyRef:
+            configMapKeyRef:
               name: zeir-config
               key: dhis2-username
+        - name: OPENSRP_POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: postgres-username
         - name: DHIS2_PASSWORD
           valueFrom:
             secretKeyRef:
@@ -442,12 +534,24 @@ spec:
         - name: ACTIVEMQ_URL
           value: tcp://$(activemq-service):activemq-port
         volumeMounts:
-        - name: opensrp-persistent-storage
-          mountPath: /usr/local/tomcat/.OpenMRS
+        - name: opensrp-build-storage
+          mountPath: /etc/build-dir
+        - name: opensrp-build-script-volume
+          mountPath: /etc/scripts
+          readOnly: true
+        - name: maven-build-cache
+          mountPath: /root/.m2
+          readOnly: false
       volumes:
-      - name: opensrp-persistent-storage
+      - name: opensrp-build-storage
         persistentVolumeClaim:
-          claimName: opensrp-pv-claim
+          claimName: opensrp-build-pv-claim
+      - name: maven-build-cache
+        persistentVolumeClaim:
+          claimName: maven-build-cache-claim
+      - name: opensrp-build-script-volume
+        configMap:
+          name: opensrp-build-script
 ---
 apiVersion: v1
 kind: Service

@@ -111,7 +111,41 @@ metadata:
 spec:
   storageClassName: manual
   capacity:
-    storage: 2Gi
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data"
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-8
+  labels:
+    type: local
+    app: opensrp-build-app
+    environment: development
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 3Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/mnt/data"
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-9
+  labels:
+    type: local
+    app: opensrp-build-maven-app
+    environment: development
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 1Gi
   accessModes:
     - ReadWriteOnce
   hostPath:
