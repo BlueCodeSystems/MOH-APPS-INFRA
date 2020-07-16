@@ -1,0 +1,5 @@
+resources:
+  - storage.yaml
+  - nacmis-deployment.yaml
+  - secrets.yaml
+  - ingress.yaml

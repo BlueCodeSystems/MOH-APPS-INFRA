@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pv-claim
+  labels:
+    app: nacmis-app
+spec:
+  selector:
+    matchLabels:
+      app: nacmis-postgres-app
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 30Gi
