@@ -142,7 +142,24 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: opensrp-build-maven-app
+      app: opensrp-app
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: opensrp-persistent-pv-claim
+  labels:
+    app: zeir-app
+spec:
+  selector:
+    matchLabels:
+      app: opensrp-app
   storageClassName: manual
   accessModes:
     - ReadWriteOnce

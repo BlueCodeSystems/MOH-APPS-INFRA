@@ -140,7 +140,24 @@ metadata:
   name: pv-9
   labels:
     type: local
-    app: opensrp-build-maven-app
+    app: opensrp-app
+    environment: development
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data"
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-10
+  labels:
+    type: local
+    app: opensrp-app
     environment: development
 spec:
   storageClassName: manual
