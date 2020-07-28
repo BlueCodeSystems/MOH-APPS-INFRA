@@ -39,3 +39,10 @@ vars:
       apiVersion: v1
     fieldref:
       fieldpath: metadata.name
+  - name: couchdb-service
+    objref:
+      kind: Service
+      name: couchdb-service
+      apiVersion: v1
+    fieldref:
+      fieldpath: metadata.name

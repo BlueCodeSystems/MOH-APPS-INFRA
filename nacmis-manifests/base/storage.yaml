@@ -15,3 +15,20 @@ spec:
   resources:
     requests:
       storage: 30Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: django-pv-claim
+  labels:
+    app: nacmis-app
+spec:
+  selector:
+    matchLabels:
+      app: django-app
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi

@@ -11,3 +11,10 @@ spec:
         backend:
           serviceName: openmrs-service
           servicePort: 8080
+  - host: zeir-opensrp.bluecodeltd.com
+    http:
+      paths:
+      - path:
+        backend:
+          serviceName: opensrp-service
+          servicePort: 8080

@@ -38,12 +38,11 @@ metadata:
   labels:
     app: zeir-app
 data:
-  mysql-username: zeir
   zeir-database: openmrs
   couchdb-username: zeir
   openmrs-mysql-database: openmrs
   openmrs-ui-username: openmrs
-  opensrp-mysql-username: openmrs
+  openmrs-mysql-username: openmrs
   opensrp-mysql-database: opensrp
   opensrp-mysql-motech-database: motech
   opensrp-mysql-reporting-database: reporting
@@ -91,7 +90,7 @@ spec:
         app: zeir-app
     spec:
       containers:
-      - image: mysql:5.6.48
+      - image: mysql:5.6
         name: mysql-container
         env:
         - name: MYSQL_ROOT_PASSWORD
@@ -113,7 +112,7 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: zeir-config
-              key: mysql-username
+              key: openmrs-mysql-username
         - name: OPENMRS_MYSQL_DATABASE
           valueFrom:
             configMapKeyRef:
@@ -214,12 +213,14 @@ spec:
             configMapKeyRef:
               name: zeir-config
               key: opensrp-postgres-database
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
         ports:
         - containerPort: 5432
           name: postgres-port
         volumeMounts:
         - name: postgres-persistent-storage
-          mountPath: /var/lib/postgresql/data/pgdata
+          mountPath: /var/lib/postgresql/data
       volumes:
       - name: postgres-persistent-storage
         persistentVolumeClaim:
@@ -269,7 +270,7 @@ spec:
               name: zeir-secrets
               key: couchdb-password
         ports:
-        - containerPort: 5954
+        - containerPort: 5984
           name: couch-port
         volumeMounts:
         - name: couchdb-storage
@@ -324,46 +325,56 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: openmrs-module-download-script
+  name: openmrs-module-download-script-1x-old
   labels:
     app: zeir-app
 data:
   modules-to-download.txt: |
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules/atomfeed-3.0.1a.omod 
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules/calculation-1.1.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules/cohort-2.0.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules/dhislocation-1.1.0b.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules/dhisreport-2.1-SNAPSHOT.omod 
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules/htmlformentry-2.5.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules/htmlwidgets-1.6.7.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules/idgen-webservices-1.1-SNAPSHOT.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules/patientimage-1.0.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules/reporting-0.9.8.1.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules/reportingrest-1.5.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules/serialization.xstream-0.2.7.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules/teammodule-1.2.0.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules/uiframework-3.3.1.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules/webservices.rest-2.20.0.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules/teammodule-1.2.0.omod
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: openmrs-module-download-script-old
+  name: openmrs-module-download-script-1x
   labels:
     app: zeir-app
 data:
   modules-to-download.txt: |
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules_v2/dhislocation-1.2.0.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules_v2/event-2.6.0.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules_v2/idgen-4.5.0.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules_v2/legacyui-1.4.0.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules_v2/providermanagement-2.10.0.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules_v2/registrationcore-1.8.0.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules_v2/teammodule-2.0.0B.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules_v2/uicommons-2.6.0.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules_v2/uiframework-3.13.0.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules_v2/uilibrary-2.0.6.omod
-    https://github.com/OpenSRP/docker-builds/blob/master/composed/files/openmrs_modules_v2/webservices.rest-2.24.0.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules/atomfeed-3.0.1a.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules/calculation-1.1.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules/cohort-2.0.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules/dhislocation-1.1.0b.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules/dhisreport-2.1-SNAPSHOT.omod 
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules/htmlformentry-2.5.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules/htmlwidgets-1.6.7.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules/idgen-webservices-1.1-SNAPSHOT.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules/patientimage-1.0.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules/reporting-0.9.8.1.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules/reportingrest-1.5.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules/serialization.xstream-0.2.7.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules/teammodule-1.2.0.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules/uiframework-3.3.1.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules/webservices.rest-2.20.0.omod
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openmrs-module-download-script-2x-old
+  labels:
+    app: zeir-app
+data:
+  modules-to-download.txt: |
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules_v2/legacyui-1.4.0.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules_v2/dhislocation-1.2.0.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules_v2/event-2.6.0.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules_v2/idgen-4.5.0.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules_v2/providermanagement-2.10.0.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules_v2/registrationcore-1.8.0.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules_v2/teammodule-2.0.0B.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules_v2/uicommons-2.6.0.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules_v2/uiframework-3.13.0.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules_v2/uilibrary-2.0.6.omod
+    https://raw.githubusercontent.com/OpenSRP/docker-builds/master/composed/files/openmrs_modules_v2/webservices.rest-2.24.0.omod
 ---
 apiVersion: v1
 kind: Service
@@ -395,23 +406,29 @@ spec:
         app: openmrs-app
     spec:
       initContainers:
-      - image: openmrs/openmrs-distro-platform:1.12.1
+      - image: openmrs/openmrs-distro-platform:1.11.9-SNAPSHOT
         #This container just downloads the required files and shuts down.
         name: module-download-container
         command: ["/bin/sh", "-c"]
-        args: 
-          - rm -rf /usr/local/tomcat/.OpenMRS/modules;
-            wget -i /etc/scripts/modules-to-download.txt -P /usr/local/tomcat/.OpenMRS/modules
+        args:
+          - rm -rf /root/.OpenMRS/modules;
+            wget -i /etc/scripts/modules-to-download.txt -P /root/.OpenMRS/modules;
         volumeMounts:
         - name: openmrs-module-download-script
           mountPath: /etc/scripts
           readOnly: true
         - name: openmrs-persistent-storage
-          mountPath: /usr/local/tomcat/.OpenMRS
+          mountPath: /root/.OpenMRS/modules
+          subPath: modules
       containers:
-      - image: openmrs/openmrs-distro-platform:1.12.1
+      - image: bluecodesystems/zeir-openmrs:1.11.5-1
+        imagePullPolicy: Always
         name: openmrs-container
         env:
+        - name: OPENMRS_RUNTIME_PROPERTIES_FILE
+          value: /usr/local/tomcat/openmrs-runtime.properties
+        - name: JDBC_URL
+          value: jdbc:mysql://$(mysql-service):3306/openmrs?createDatabaseIfNotExist=true
         - name: DB_HOST
           value: $(mysql-service)
         - name: DB_DATABASE
@@ -423,14 +440,14 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: zeir-config
-              key: mysql-username
+              key: openmrs-mysql-username
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: zeir-secrets
               key: mysql-user-password
         - name: DB_CREATE_TABLES
-          value: 'false'
+          value: 'true'
         - name: DB_AUTO_UPDATE
           value: 'false'
         - name: MODULE_WEB_ADMIN
@@ -441,13 +458,25 @@ spec:
         volumeMounts:
         - name: openmrs-persistent-storage
           mountPath: /usr/local/tomcat/.OpenMRS
+        - name: openmrs-modules-storage
+          mountPath: /root/.OpenMRS/modules
+          subPath: modules
+        - name: openmrs-persistent-storage
+          mountPath: /usr/local/tomcat/.OpenMRS/owa
+          subPath: owa
       volumes:
       - name: openmrs-persistent-storage
         persistentVolumeClaim:
           claimName: openmrs-pv-claim
+      - name: openmrs-modules-storage
+        persistentVolumeClaim:
+          claimName: openmrs-modules-pv-claim
+      - name: openmrs-owa-storage
+        persistentVolumeClaim:
+          claimName: openmrs-owa-pv-claim
       - name: openmrs-module-download-script
         configMap:
-          name: openmrs-module-download-script
+          name: openmrs-module-download-script-1x
 ---
 apiVersion: v1
 kind: Service
@@ -476,7 +505,7 @@ data:
     apt-get install -y moreutils
     cd /etc/build-dir
     if [ ! -d "opensrp-server" ] ; then
-       git clone https://github.com/BlueCodeSystems/opensrp-server
+       git clone --recurse-submodules https://github.com/BlueCodeSystems/opensrp-server
        cd opensrp-server
     else    
        cd "opensrp-server"
@@ -516,11 +545,6 @@ spec:
         volumeMounts:
         - name: opensrp-persistent-storage
           mountPath: /usr/local/tomcat/webapps
-      initContainers:
-      - image: maven:3.6.3-jdk-8
-        name: opensrp-build-container
-        imagePullPolicy: Always
-        command: ["bash", "/etc/scripts/opensrp-build.sh"]
         env:
         - name: OPENMRS_URL
           value: $(openmrs-service):8080/openmrs
@@ -534,21 +558,11 @@ spec:
             secretKeyRef:
               name: zeir-secrets
               key: openmrs-ui-password
-        - name: COUCHDB_USERNAME
-          valueFrom:
-            configMapKeyRef:
-              name: zeir-config
-              key: couchdb-username
-        - name: COUCHDB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: zeir-secrets
-              key: couchdb-password
         - name: OPENSRP_MYSQL_USER
           valueFrom:
             configMapKeyRef:
               name: zeir-config
-              key: opensrp-mysql-username
+              key: openmrs-mysql-username
         - name: OPENSRP_MYSQL_USER_PASSWORD
           valueFrom:
             secretKeyRef:
@@ -574,10 +588,134 @@ spec:
             configMapKeyRef:
               name: zeir-config
               key: opensrp-mysql-anm-database
+        - name: COUCHDB_HOST
+          value: $(couchdb-service)
+        - name: COUCHDB_PORT
+          value: "5984"
+        - name: COUCHDB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: couchdb-username
+        - name: COUCHDB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zeir-secrets
+              key: couchdb-password
         - name: REDIS_HOST
           value: $(redis-service)
         - name: REDIS_PORT
-          value: redis-port
+          value: "6379"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zeir-secrets
+              key: redis-password
+        - name: OPENSRP_MYSQL_JDBC
+          value: jdbc:mysql:$(mysql-service):3306/opensrp?createDatabaseIfNotExist=true
+        - name: OPENSRP_MYSQL_JDBC_WO
+          value: jdbc:mysql:$(mysql-service):3306
+        - name: OPENSRP_MYSQL_MOTECH_JDBC
+          value: jdbc:mysql:$(mysql-service):3306/motech
+        - name: OPENSRP_POSTGRES_JDBC
+          value: jdbc:postgresql:$(postgres-service):5984/opensrp
+        - name: OPENSRP_TEST_POSTGRES_JDBC
+          value: jdbc:postgresql:$(postgres-service):5984/opensrp_test
+        - name: DHIS2_URL
+          value: $(dhis2-service):8080/api
+        - name: DHIS2_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: dhis2-username
+        - name: OPENSRP_POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: postgres-username
+        - name: DHIS2_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zeir-secrets
+              key: dhis2-password
+        - name: OPENSRP_POSTGRES_USER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zeir-secrets
+              key: opensrp-postgres-password
+        - name: OPENSRP_POSTGRES_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: opensrp-postgres-database
+        - name: ACTIVEMQ_URL
+          value: tcp://$(activemq-service):61616
+      initContainers:
+      - image: maven:3.6.3-jdk-8
+        name: opensrp-build-container
+        imagePullPolicy: Always
+        command: ["bash", "/etc/scripts/opensrp-build.sh"]
+        env:
+        - name: OPENMRS_URL
+          value: $(openmrs-service):8080/openmrs
+        - name: OPENMRS_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: openmrs-ui-username
+        - name: OPENMRS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zeir-secrets
+              key: openmrs-ui-password
+        - name: OPENSRP_MYSQL_USER
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: openmrs-mysql-username
+        - name: OPENSRP_MYSQL_USER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zeir-secrets
+              key: mysql-user-password
+        - name: OPENSRP_MYSQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: opensrp-mysql-database
+        - name: OPENSRP_MYSQL_MOTECH_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: opensrp-mysql-motech-database
+        - name: OPENSRP_MYSQL_REPORTING_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: opensrp-mysql-reporting-database
+        - name: OPENSRP_MYSQL_ANM_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: opensrp-mysql-anm-database
+        - name: COUCHDB_HOST
+          value: $(couchdb-service)
+        - name: COUCHDB_PORT
+          value: "5984"
+        - name: COUCHDB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: zeir-config
+              key: couchdb-username
+        - name: COUCHDB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zeir-secrets
+              key: couchdb-password
+        - name: REDIS_HOST
+          value: $(redis-service)
+        - name: REDIS_PORT
+          value: "6379"
         - name: REDIS_PASSWORD
           valueFrom:
             secretKeyRef:

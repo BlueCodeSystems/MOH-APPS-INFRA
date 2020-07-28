@@ -7,12 +7,12 @@ spec:
   selector:
     matchLabels:
       app: zeir-app
-  storageClassName: manual
+  storageClassName: local-storage
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: 40Gi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -23,13 +23,13 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: couchdb
-  storageClassName: manual
+      app: couchdb-app
+  storageClassName: local-storage
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: 30Gi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -41,7 +41,7 @@ spec:
   selector:
     matchLabels:
       app: couchdb-lucene-app
-  storageClassName: manual
+  storageClassName: local-storage
   accessModes:
     - ReadWriteOnce
   resources:
@@ -58,12 +58,46 @@ spec:
   selector:
     matchLabels:
       app: openmrs-app
-  storageClassName: manual
+  storageClassName: local-storage
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: openmrs-modules-pv-claim
+  labels:
+    app: zeir-app
+spec:
+  selector:
+    matchLabels:
+      app: openmrs-app
+  storageClassName: local-storage
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: openmrs-owa-pv-claim
+  labels:
+    app: zeir-app
+spec:
+  selector:
+    matchLabels:
+      app: openmrs-app
+  storageClassName: local-storage
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -75,7 +109,7 @@ spec:
   selector:
     matchLabels:
       app: zeir-redis-app
-  storageClassName: manual
+  storageClassName: local-storage
   accessModes:
     - ReadWriteOnce
   resources:
@@ -92,29 +126,12 @@ spec:
   selector:
     matchLabels:
       app: zeir-postgres-app
-  storageClassName: manual
+  storageClassName: local-storage
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 10Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: opensrp-pv-claim
-  labels:
-    app: zeir-app
-spec:
-  selector:
-    matchLabels:
-      app: opensrp-app
-  storageClassName: manual
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
+      storage: 20Gi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -126,7 +143,7 @@ spec:
   selector:
     matchLabels:
       app: opensrp-build-app
-  storageClassName: manual
+  storageClassName: local-storage
   accessModes:
     - ReadWriteMany
   resources:
@@ -143,7 +160,7 @@ spec:
   selector:
     matchLabels:
       app: opensrp-app
-  storageClassName: manual
+  storageClassName: local-storage
   accessModes:
     - ReadWriteOnce
   resources:
@@ -160,7 +177,7 @@ spec:
   selector:
     matchLabels:
       app: opensrp-app
-  storageClassName: manual
+  storageClassName: local-storage
   accessModes:
     - ReadWriteOnce
   resources:
